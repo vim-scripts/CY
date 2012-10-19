@@ -1,11 +1,13 @@
 " CY Input Method for Chinese
 " 穿越中文输入法 (Vim 版本)
 " Author: Cyrus Baow <cy2081@baow.com>
-" Last Change:	2012 Oct 17
-" Release Version: 1.1
+" Last Change:	2012 Oct 19
+" Release Version: 1.2
 " License: GPL
 "
 " 主页：http://www.baow.com/help/cyim/
+"
+" {{{
 "
 " 特别说明和致谢：
 "  - ywvim          http://www.vim.org/scripts/script.php?script_id=2662
@@ -40,7 +42,9 @@
 "   <Ctrl-f> 设置搜索关键词，用第一个字符进行全屏定位
 "   ,g 开始搜索词汇
 "   ,f 开始全屏定位
-
+"
+"   <Ctrl-s> 输入前置字符
+"
 "   ; 分号切换到临时英文，可在文件cy.cy当中的 EnChar 当中设置
 "   { 大括号切换到临时拼音 ，在文件cy.cy当中的 PyChar 当中设置
 "   大写英文字母切换到英文模式, 键盘左上角的反单引号 ` 回到中文模式 
@@ -64,6 +68,7 @@
 " --------
 "
 "  避免和其它插件产生冲突，如果报错，请先暂停其它相关插件的使用
+"  }}}
 
 scriptencoding utf-8
 
@@ -84,30 +89,67 @@ let g:cy_search_brave = 1 " 是否使用CY搜索方式，1 表示打开，0 表�
 " 基本配置结束}}} 
 
 " --------------------------------------------------------------------
-" 快捷键 {{{
-imap <silent> <C-x> <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle_post()<CR>
-cmap <silent> <C-x> <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle_post()<CR>
+" 快捷键和参数设置 {{{
+let s:cy_switch_key = "\<C-x>"  "输入法开关
+let s:cy_find_input_key = "\<C-f>"    "设置搜索词
+let s:cy_cancle_key = "\<C-d>"   "取消当前输入
+let s:cy_input_pre_key = "\<C-s>"   "连续输入时只输入前置字符
+let s:cy_delete_key = "\<C-h>"   "删除前边的字母
+let s:cy_tocn_key = '`'  "由大写字母切换到英文后返回中文的键
+let s:cy_jump_map_key = ',f'
+let s:cy_find_map_key = ',g'
+let s:cy_jump_key1 = 'f'
+let s:cy_jump_key2 = 'F'
+let s:cy_jump_key3 = 't'
 
-nnoremap <silent> ,f :call CySearchF2(-1, -1, 0)<cr>
-nnoremap <silent> ,g :execute '/'.g:cy_find_str<cr>
+" 默认参数
+let s:varlst = [
+            \["cy_lockb", 1],
+            \["cy_zhpunc", 1],
+            \["cy_autoinput", 1],
+            \["cy_circlecandidates", 1],
+            \["cy_helpim_on", 0],
+            \["cy_matchexact", 0],
+            \["cy_chinesecode", 1],
+            \["cy_gb", 0],
+            \["cy_esc_autoff", 0],
+            \["cy_listmax", 10],
+            \['cy_conv', ""],
+            \['cy_preconv', "g2b"],
+            \['cy_pageupkeys', "-"],
+            \['cy_pagednkeys', "="],
+            \['cy_inputzh_keys', " 	"],
+            \['cy_inputzh_secondkeys', ";"],
+            \['cy_inputen_keys', ""],
+            \]
+" 设置结束 }}}
+" --------------------------------------------------------------------
+
+" Map {{{
+execute 'imap <silent> '.s:cy_switch_key.' <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle_post()<CR>'
+execute 'cmap <silent> '.s:cy_switch_key.' <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle_post()<CR>'
+
+execute 'nnoremap <silent> '.s:cy_jump_map_key.' :call CySearchF2(-1, -1, 0)<cr>'
+execute 'nnoremap <silent> '.s:cy_find_map_key." :execute '/'.g:cy_find_str<cr>"
 
 
 if g:cy_search_brave == 1
-    nmap F :call CySearchF(0, 0, 0)<cr>
-    vmap F <ESC>:call CySearchF(0, 0, 1)<cr>
-    omap F v:call CySearchF(0, 0, 0)<cr>
+    execute 'nmap '.s:cy_jump_key2.' :call CySearchF(0, 0, 0)<cr>'
+    execute 'vmap '.s:cy_jump_key2.' <ESC>:call CySearchF(0, 0, 1)<cr>'
+    execute 'omap '.s:cy_jump_key2.' v:call CySearchF(0, 0, 0)<cr>'
 
-    nmap f :call CySearchF(-1, -1, 0)<cr>
-    vmap f <ESC>:call CySearchF(-1, -1, 1)<cr>
-    omap f v:call CySearchF(-1, -1, 0)<cr>
+    execute 'nmap '.s:cy_jump_key1.' :call CySearchF(-1, -1, 0)<cr>'
+    execute 'vmap '.s:cy_jump_key1.' <ESC>:call CySearchF(-1, -1, 1)<cr>'
+    execute 'omap '.s:cy_jump_key1.' v:call CySearchF(-1, -1, 0)<cr>'
 
-    nmap t :call CySearchT(-1, -1, 0)<cr>
-    vmap t <ESC>:call CySearchT(-1, -1, 1)<cr>
-    omap t v:call CySearchT(-1, -1, 0)<cr>
+    execute 'nmap '.s:cy_jump_key3.' :call CySearchT(-1, -1, 0)<cr>'
+    execute 'vmap '.s:cy_jump_key3.' <ESC>:call CySearchT(-1, -1, 1)<cr>'
+    execute 'omap '.s:cy_jump_key3.' v:call CySearchT(-1, -1, 0)<cr>'
 endif
-" 快捷键 }}}
+" }}}
 
 " --------------------------------------------------------------------
+"  初始化 {{{
 let g:cy_ims=[
             \['cy', '穿越', 'cy.cy'],
             \['py', '拼音', 'pinyin.cy'],
@@ -126,7 +168,7 @@ let g:cy_eng_target_keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 let g:cy_buffer = ''
 let g:cy_find_mode = 0
 let g:cy_find_str = ''
-let g:cy_find_key = ''
+let g:cy_find_str_first = ''
 
 let g:CySearch_target_keys  = ''
 let g:CySearch_target_keys .= 'abcdefghijklmnopqrstuwxz'
@@ -135,7 +177,6 @@ let g:CySearch_target_keys .= "[];'\,./"
 let g:CySearch_target_keys .= 'ABCDEFGHIJKLMNOPQRSTUWXZ'
 let g:CySearch_target_keys .= '{}:"|<>?'
 let g:CySearch_target_keys .= '!@#$%^&*()_+'
-
 
 hi CySearchTarget   ctermfg=yellow ctermbg=red cterm=bold gui=bold guibg=Red guifg=yellow
 
@@ -151,7 +192,7 @@ for i in s:index_to_key
     let s:key_to_index[i] = index
     let index += 1
 endfor
-
+"}}}
 
 function s:Cy_SetVar(var, val) " Assign user var to script var{{{
     let s:{a:var} = a:val
@@ -188,26 +229,7 @@ function s:Cy_loadvar() " Load global user vars.{{{
         finish
     endif
 
-    let varlst = [
-                \["cy_lockb", 1],
-                \["cy_zhpunc", 1],
-                \["cy_autoinput", 1],
-                \["cy_circlecandidates", 1],
-                \["cy_helpim_on", 0],
-                \["cy_matchexact", 0],
-                \["cy_chinesecode", 1],
-                \["cy_gb", 0],
-                \["cy_esc_autoff", 0],
-                \["cy_listmax", 10],
-                \['cy_conv', ""],
-                \['cy_preconv', "g2b"],
-                \['cy_pageupkeys', "-"],
-                \['cy_pagednkeys', "="],
-                \['cy_inputzh_keys', " 	"],
-                \['cy_inputzh_secondkeys', ";"],
-                \['cy_inputen_keys', ""],
-                \]
-    for v in varlst
+    for v in s:varlst
         call <SID>Cy_SetVar(v[0], v[1])
     endfor
 
@@ -306,12 +328,14 @@ function s:Cy_SetScriptVar(m, n) "{{{
         let s:cy_{a:m}_{a:n} = s:cy_{a:m}[a:n]
     endif
 endfunction "}}}
+
 function s:Cy_SetMbVar(m, n, v) "{{{
     let s:cy_{a:m}_{a:n} = a:v
     if s:cy_{a:m}_{a:n} == ''
         let s:cy_{a:m}_{a:n} = s:cy_{a:n}
     endif
 endfunction "}}}
+
 function s:CyLoadConvertList() "{{{
     if !exists("s:cy_clst")
         let s:cy_g2b_mb_encoded = 'utf-8'
@@ -326,6 +350,7 @@ function s:CyLoadConvertList() "{{{
         call map(s:cy_clst, 'iconv(v:val, s:cy_g2b_mb_encoded, &encoding)')
     endif
 endfunction "}}}
+
 function s:CyLoadGBList() "{{{
     if !exists("s:cy_gbfilterlist")
         let s:cy_gbfilter_mb_encoded = 'utf-8'
@@ -339,6 +364,7 @@ function s:CyLoadGBList() "{{{
         call map(s:cy_gbfilterlist, 'iconv(v:val, s:cy_gbfilter_mb_encoded, &encoding)')
     endif
 endfunction "}}}
+
 function s:CyHighlight() "{{{
     let b:cy_parameters["highlight_imname"] = 'MoreMsg'
     if s:cy_conv != ''
@@ -378,12 +404,13 @@ function s:Cy_puncp(p) "{{{
         endif
     endif
 endfunction "}}}
-function s:Cy_find_mode()
+
+function s:Cy_find_mode() "{{{
     let g:cy_find_mode = 1
     echo '请继续输入要搜索的关键词'
     "sleep 2
     return ''
-endfunction
+endfunction "}}}
 
 function s:Cy_keymap() "{{{
     for key in sort(split(s:cy_{b:cy_parameters["active_mb"]}_usedcodes,'\zs'))
@@ -395,7 +422,7 @@ function s:Cy_keymap() "{{{
     if s:cy_{b:cy_parameters["active_mb"]}_enchar != ''
         execute 'lnoremap <buffer> <expr> '.s:cy_{b:cy_parameters["active_mb"]}_enchar.' <SID>Cy_enmode()'
     endif
-    execute 'lnoremap <buffer> <expr> ` <SID>Cy_tocn()'
+    execute 'lnoremap <buffer> <expr> '.s:cy_tocn_key.' <SID>Cy_tocn()'
     for key in sort(split(g:cy_eng_target_keys,'\zs'))
         execute 'lnoremap <buffer> <expr> '.escape(key, '\|').'  <SID>Cy_toen("'.key.'")'
     endfor
@@ -406,8 +433,8 @@ function s:Cy_keymap() "{{{
     if s:cy_esc_autoff
         inoremap <buffer> <esc> <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle()<CR><ESC>
     endif
-    inoremap <buffer> <C-d> <ESC>a
-    lnoremap <buffer> <C-f> <C-R>=<SID>Cy_find_mode()<CR>
+    execute 'inoremap <buffer> '.s:cy_cancle_key.' <ESC>a'
+    execute 'lnoremap <buffer> '.s:cy_find_input_key.' <C-R>=<SID>Cy_find_mode()<CR>'
     return ''
 endfunction "}}}
 
@@ -639,19 +666,19 @@ function s:Cy_echofinalresult(list) "{{{
     endfor
 endfunction "}}}
 
-function s:Cy_find_tip()
+function s:Cy_find_tip() "{{{
     call setreg(g:cy_reg_name, g:cy_find_str)
     if &enc == 'utf-8'
-        let g:cy_find_key = strpart(g:cy_find_str,0,3) 
+        let g:cy_find_str_first = strpart(g:cy_find_str,0,3) 
     else
-        let g:cy_find_key = strpart(g:cy_find_str,0,2) 
+        let g:cy_find_str_first = strpart(g:cy_find_str,0,2) 
     endif
     echon '当前搜索关键词：'
     echohl Keyword | echon g:cy_find_str | echohl None
     echon '   定位单字：'
-    echohl Keyword | echon g:cy_find_key | echohl None
+    echohl Keyword | echon g:cy_find_str_first | echohl None
     sleep 2
-endfunction
+endfunction "}}}
 
 function s:Cy_char(key) "{{{
     let char = ''
@@ -667,13 +694,14 @@ function s:Cy_char(key) "{{{
         let to_char = ''
         let key = nr2char(keycode)
         let keypat = '\V'.escape(key, '\')
-        if (keycode == "\<BS>") || (keycode == char2nr("\<C-h>")) "backspace
+        if (keycode == "\<BS>") || (keycode == char2nr(s:cy_delete_key)) "backspace
             if g:cy_to_english == 1
                 return key
             endif
             let pgnr = 1
             if len(old_char) == maxcodes
                 let buffer_char = temp_char
+                let temp_char2 = temp_char
             else
                 let buffer_char = temp_char2
             endif
@@ -845,6 +873,7 @@ function s:Cy_char(key) "{{{
                 endif
                 return buffer_char.<SID>Cy_ReturnChar()
             "else
+                "return buffer_char
                 "return buffer_char.<SID>Cy_ReturnChar()
                 "let g:cy_to_english = 1
                 "return buffer_char.<SID>Cy_ReturnChar(showchar)."\<C-^>"
@@ -912,7 +941,16 @@ function s:Cy_char(key) "{{{
             let temp_char = ''
             let temp_char2 = ''
             return buffer_char.<SID>Cy_ReturnChar(0).<SID>Cy_UIsetting(0)
-        elseif keycode == char2nr("\<C-x>")  "switch status
+        elseif keycode == char2nr(s:cy_input_pre_key) "input pre char 
+            if len(old_char) == maxcodes
+                let buffer_char = temp_char
+            else
+                let buffer_char = temp_char2
+            endif
+            let temp_char = ''
+            let temp_char2 = ''
+            return buffer_char.<SID>Cy_ReturnChar()
+        elseif keycode == char2nr(s:cy_switch_key)  "switch status
             if len(old_char) == maxcodes
                 let buffer_char = temp_char
             else
@@ -922,10 +960,10 @@ function s:Cy_char(key) "{{{
             let temp_char2 = ''
             "return buffer_char.<SID>Cy_ReturnChar(showchar)."\<C-^>"
             return <SID>Cy_ReturnChar()."\<C-^>"
-        elseif keycode == char2nr("\<C-f>")  "find
+        elseif keycode == char2nr(s:cy_find_input_key)  "find
             let g:cy_find_mode = 1
             return <SID>Cy_ReturnChar()
-        elseif keycode == char2nr("\<C-d>")  "
+        elseif keycode == char2nr(s:cy_cancle_key)  "
             "return ""
             return <SID>Cy_ReturnChar()
         elseif s:cy_pgbuf[s:cy_pagenr] != [] "return first word and key
@@ -949,6 +987,7 @@ function s:Cy_tocn() "{{{
     let g:cy_to_english = 0
     return ""
 endfunction "}}}
+
 function s:Cy_toen(key) "{{{
     let g:cy_to_english = 1
     return a:key
@@ -1012,10 +1051,10 @@ function s:Cy_ReturnChar(...) "{{{
     return sb
 endfunction "}}}
 
-function CY_Firefox(path)
+function CY_Firefox(path) "{{{
     let g:file_title = readfile(a:path)[0]
     set statusline=%{g:file_title}\ [%t]\ %<\ %h%m%r%=%-14.(%l,%c%)\ %P\ [buf\ %n\ ]
-endfunction
+endfunction "}}}
 
 function Cy_toggle() "{{{
     if !exists("s:cy_ims")
@@ -1058,47 +1097,44 @@ function Cy_toggle_post() "{{{
     return ""
 endfunction "}}}
 
-
-"{{{ motion functions
-function! CySearchW(lines_prev, lines_next, vismode)
+function! CySearchW(lines_prev, lines_next, vismode) "{{{
     call CySearch('\<.', a:lines_prev, a:lines_next, a:vismode, "")
-endfunction
+endfunction "}}}
 
-function! CySearchE(lines_prev, lines_next, vismode)
+function! CySearchE(lines_prev, lines_next, vismode) "{{{
     call CySearch('.\>', a:lines_prev, a:lines_next, a:vismode, "")
-endfunction
+endfunction "}}}
 
-function! CySearchF(lines_prev, lines_next, vismode)
+function! CySearchF(lines_prev, lines_next, vismode) "{{{
     echo '请输入要找的字符：'
     let raw = nr2char( getchar() )
     let re = escape(raw, '.$^~')
     redraw
     call CySearch('\C'.re, a:lines_prev, a:lines_next, a:vismode, raw)
-endfunction
-function! CySearchF2(lines_prev, lines_next, vismode)
-    if len(g:cy_find_key) == 0
+endfunction "}}}
+
+function! CySearchF2(lines_prev, lines_next, vismode) "{{{
+    if len(g:cy_find_str_first) == 0
         echo '当前没有设置搜索关键词'
         return '\<Esc>'
     endif
-    let raw = g:cy_find_key 
+    let raw = g:cy_find_str_first 
     let re = escape(raw, '.$^~')
     redraw
     call CySearch('\C'.re, a:lines_prev, a:lines_next, a:vismode, raw)
-endfunction
+endfunction "}}}
 
-function! CySearchT(lines_prev, lines_next, vismode)
+function! CySearchT(lines_prev, lines_next, vismode) "{{{
     let raw = nr2char( getchar() )
     let re = escape( raw, '.$^~')
     let re = '.' . re
     redraw
     call CySearch('\C'.re, a:lines_prev, a:lines_next, a:vismode, raw)
-endfunction
-"}}}
+endfunction "}}}
 
 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 " jump to l-th line and c-th column
-"{{{ function! s:JumpToCoords(l, c, vismode)
-function! s:JumpToCoords(l, c, vismode)
+function! s:JumpToCoords(l, c, vismode) "{{{
     let ve = &virtualedit
     setl virtualedit=""
     if a:vismode
@@ -1111,16 +1147,13 @@ function! s:JumpToCoords(l, c, vismode)
     endif
     execute "silent setl virtualedit=" . ve
     echo "跳转到了 [" . a:l . ", " . a:c . "]"
-endfunction
-"}}}
+endfunction "}}}
 
 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 " function returns list of places ([line, column]),
 " that match regular expression 're'
 " in lines of numbers from list 'line_numbers'
-"{{{ function! s:FindTargets(re, line_numbers)
-
-function! s:FindTargets(re, line_numbers)
+function! s:FindTargets(re, line_numbers) "{{{
     let targets = []
     for l in a:line_numbers
         let n = 1
@@ -1135,14 +1168,11 @@ function! s:FindTargets(re, line_numbers)
         endwhile
     endfor
     return targets
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 " split 'list' into groups (list of lists) of
 " 'group_size' length
-"{{{ function! s:SplitListIntoGroups(list, group_size)
-function! s:SplitListIntoGroups(list, group_size)
+function! s:SplitListIntoGroups(list, group_size) "{{{
     let groups = []
     let i = 0
     while i < len(a:list)
@@ -1150,12 +1180,9 @@ function! s:SplitListIntoGroups(list, group_size)
         let i += a:group_size
     endwhile
     return groups
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:GetLinesFromCoordList(list)
-function! s:GetLinesFromCoordList(list)
+function! s:GetLinesFromCoordList(list) "{{{
     let lines_seen = {}
     let lines_no = []
     for [l, c, k] in a:list
@@ -1165,36 +1192,27 @@ function! s:GetLinesFromCoordList(list)
         endif
     endfor
     return lines_no
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:CreateHighlightRegex(coords)
-function! s:CreateHighlightRegex(coords)
+function! s:CreateHighlightRegex(coords) "{{{
     let tmp = []
     for [l, k, c] in s:Flatten(a:coords)
         call add(tmp, '\%' . l . 'l\%' . c . 'c')
     endfor
     return join(tmp, '\|')
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:Flatten(list)
-function! s:Flatten(list)
+function! s:Flatten(list) "{{{
     let res = []
     for elem in a:list
         call extend(res, elem)
     endfor
     return res
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 " get a list of coordinates groups [   [ [1,2], [2,5] ], [ [2,2] ]  ]
 " get a list of coordinates groups [   [ [1,2], [2,5] ]  ]
-"{{{ function! s:AskForTarget(group)
-function! s:AskForTarget(groups, re_raw) abort
+function! s:AskForTarget(groups, re_raw) abort  "{{{
     let single_group = ( len(a:groups) == 1 ? 1 : 0 )
 
     " how many targets there is
@@ -1286,19 +1304,13 @@ function! s:AskForTarget(groups, re_raw) abort
             endif
         endif
     endtry
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:LinesAllSequential()
-function! s:LinesAllSequential()
+function! s:LinesAllSequential() "{{{
     return filter( range(line('w0'), line('w$')), 'foldclosed(v:val) == -1' )
-endfunction
-" }}}
+endfunction " }}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:LinesSurrondingAll(a:surrounding_lines)
-function! s:LinesSurrondingAll(surrounding_lines)
+function! s:LinesSurrondingAll(surrounding_lines) "{{{
     let cur_line = line('.')
     let line_numbers = [ cur_line ]
     let i = 1
@@ -1320,12 +1332,9 @@ function! s:LinesSurrondingAll(surrounding_lines)
         let i += 1
     endwhile
     return line_numbers
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! s:LinesInRange(lines_prev, lines_next)
-function! s:LinesInRange(lines_prev, lines_next)
+function! s:LinesInRange(lines_prev, lines_next) "{{{
     let all_lines = filter( range(line('w0'), line('w$')), 'foldclosed(v:val) == -1' )
     let current = index(all_lines, line('.'))
 
@@ -1336,12 +1345,10 @@ function! s:LinesInRange(lines_prev, lines_next)
     let lines_next_i   = min( [len(all_lines), current + lines_next] )
 
     return all_lines[ lines_prev_i : lines_next_i ]
-endfunction
-"}}}
+endfunction "}}}
 
-"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-"{{{ function! CySearch()
-function! CySearch(re, lines_prev, lines_next, vismode, re_raw)
+
+function! CySearch(re, lines_prev, lines_next, vismode, re_raw) "{{{
     let group_size = len(s:index_to_key)
     let lnums = s:LinesInRange(a:lines_prev, a:lines_next)
 
@@ -1368,8 +1375,7 @@ function! CySearch(re, lines_prev, lines_next, vismode, re_raw)
     else
         call s:JumpToCoords(coords[0], coords[1], a:vismode)
     endif
-endfunction
-"}}}
+endfunction "}}}
 
 
 " vim: foldmethod=marker:
