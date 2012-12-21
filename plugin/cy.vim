@@ -1,8 +1,8 @@
 " CY Input Method for Chinese
 " 穿越中文输入法 (Vim 版本)
 " Author: Cyrus Baow <cy2081@baow.com>
-" Last Change:	2012 Oct 19
-" Release Version: 1.2
+" Last Change:	2012 Dec 22
+" Release Version: 2.0
 " License: GPL
 "
 " 主页：http://www.baow.com/help/cyim/
@@ -12,7 +12,6 @@
 " 特别说明和致谢：
 "  - ywvim          http://www.vim.org/scripts/script.php?script_id=2662
 "  - PreciseJump    http://www.vim.org/scripts/script.php?script_id=3437
-"  - 哲哲豆音形码   http://zzdzzd.ys168.com/
 " 向以上软件作者表示感谢。
 "
 "
@@ -28,9 +27,12 @@
 " 快捷键
 " ------
 "
-"   <Ctrl-x> 输入法开关.
+"   <Ctrl-\> 输入法开关.
 "   <Ctrl-d> 取消当前的中文候选
-"   <Ctrl-h> 和 <Backspace> 一样，用于删除前边输入的字母
+"
+"   <Ctrl-h> 和 <Backspace> 一样，用于删除前边输入的字母，为了方便
+"   还可选用<Ctrl-Space>
+"
 "   <Ctrl-^> 显示菜单，设置输入法:
 "    (m) 码表切换
 "    (.) 中英标点切换
@@ -44,16 +46,22 @@
 "   ,f 开始全屏定位
 "
 "   <Ctrl-s> 输入前置字符
+"   <Alt-u> 删除刚才新输入的字词
+"   \ 中英文切换
+"   <Ctrl-e> 中英文标点切换
 "
-"   ; 分号切换到临时英文，可在文件cy.cy当中的 EnChar 当中设置
+"   ' 单引号切换到临时英文，可在文件cy.cy当中的 EnChar 当中设置
 "   { 大括号切换到临时拼音 ，在文件cy.cy当中的 PyChar 当中设置
-"   大写英文字母切换到英文模式, 键盘左上角的反单引号 ` 回到中文模式 
+"   输入大写英文字母自动切换到英文模式
 
 "   - 向上翻页
 "   = 向下翻页
 
 "   空格或数字选字, 回车输英文
-"   ; 分号选择第二候选词
+"   ' 单引号选择第二候选词
+"   " 双引号选择第三候选词
+"   \ 反斜线选择第四候选词
+"   | 竖线选择第五候选词
 "
 " 中文搜索方法
 " -------------
@@ -90,17 +98,22 @@ let g:cy_search_brave = 1 " 是否使用CY搜索方式，1 表示打开，0 表�
 
 " --------------------------------------------------------------------
 " 快捷键和参数设置 {{{
-let s:cy_switch_key = "\<C-x>"  "输入法开关
+let s:cy_switch_key = "\<C-\>"  "输入法开关
 let s:cy_find_input_key = "\<C-f>"    "设置搜索词
 let s:cy_cancle_key = "\<C-d>"   "取消当前输入
 let s:cy_input_pre_key = "\<C-s>"   "连续输入时只输入前置字符
 let s:cy_delete_key = "\<C-h>"   "删除前边的字母
-let s:cy_tocn_key = '`'  "由大写字母切换到英文后返回中文的键
+let s:cy_delete_key2 = "\<C-Space>"   "删除前边的字母
+let s:cy_puncp_key = "\<C-e>"   "中英文标点切换
+let s:cy_tocn_key = '\'  "由大写字母切换到英文后返回中文的键
 let s:cy_jump_map_key = ',f'
 let s:cy_find_map_key = ',g'
 let s:cy_jump_key1 = 'f'
 let s:cy_jump_key2 = 'F'
 let s:cy_jump_key3 = 't'
+let s:cy_third_cn = '"'
+let s:cy_four_cn = '\'
+let s:cy_five_cn = '|'
 
 " 默认参数
 let s:varlst = [
@@ -119,7 +132,7 @@ let s:varlst = [
             \['cy_pageupkeys', "-"],
             \['cy_pagednkeys', "="],
             \['cy_inputzh_keys', " 	"],
-            \['cy_inputzh_secondkeys', ";"],
+            \['cy_inputzh_secondkeys', "'"],
             \['cy_inputen_keys', ""],
             \]
 " 设置结束 }}}
@@ -434,9 +447,35 @@ function s:Cy_keymap() "{{{
         inoremap <buffer> <esc> <C-R>=Cy_toggle()<CR><C-R>=Cy_toggle()<CR><ESC>
     endif
     execute 'inoremap <buffer> '.s:cy_cancle_key.' <ESC>a'
+    execute 'inoremap <buffer> '.s:cy_puncp_key.' <C-R>=<SID>Cy_puncp_en()<CR>'
     execute 'lnoremap <buffer> '.s:cy_find_input_key.' <C-R>=<SID>Cy_find_mode()<CR>'
     return ''
 endfunction "}}}
+
+function s:Cy_puncp_en()
+    if s:cy_{b:cy_parameters["active_mb"]}_zhpunc == 0
+        call <SID>Cy_keymap_punc()
+    else
+        for p in keys(s:cy_{b:cy_parameters["active_mb"]}_puncdic)
+            if p == '\'
+                execute 'lunmap <buffer> ' . p
+            else
+                execute 'lunmap <buffer> ' . escape(p, '\|')
+            endif
+
+        endfor
+    endif
+    if s:cy_{b:cy_parameters["active_mb"]}_enchar != ''
+        execute 'lnoremap <buffer> <expr> ' . s:cy_{b:cy_parameters["active_mb"]}_enchar . ' <SID>Cy_enmode()'
+    endif
+    let s:cy_{b:cy_parameters["active_mb"]}_zhpunc = 1 - s:cy_{b:cy_parameters["active_mb"]}_zhpunc
+    if s:cy_{b:cy_parameters["active_mb"]}_zhpunc == 1
+        echo '中文标点'
+    else
+        echo '英文标点'
+    endif
+    return ''
+endfunction
 
 function s:Cy_UIsetting(m) "{{{
     let punc='。'
@@ -484,22 +523,7 @@ function s:Cy_UIsetting(m) "{{{
         call <SID>Cy_loadmb()
         call <SID>Cy_keymap()
     elseif par == '.'
-        if s:cy_{b:cy_parameters["active_mb"]}_zhpunc == 0
-            call <SID>Cy_keymap_punc()
-        else
-            for p in keys(s:cy_{b:cy_parameters["active_mb"]}_puncdic)
-                if p == '\'
-                    execute 'lunmap <buffer> ' . p
-                else
-                    execute 'lunmap <buffer> ' . escape(p, '\|')
-                endif
-
-            endfor
-        endif
-        if s:cy_{b:cy_parameters["active_mb"]}_enchar != ''
-            execute 'lnoremap <buffer> <expr> ' . s:cy_{b:cy_parameters["active_mb"]}_enchar . ' <SID>Cy_enmode()'
-        endif
-        let s:cy_{b:cy_parameters["active_mb"]}_zhpunc = 1 - s:cy_{b:cy_parameters["active_mb"]}_zhpunc
+        call <SID>Cy_puncp_en()
     elseif par == 'p'
         let s:cy_{b:cy_parameters["active_mb"]}_maxphraselength = input('最大词长: ', s:cy_{b:cy_parameters["active_mb"]}_maxphraselength)
     elseif par == 'g'
@@ -679,6 +703,10 @@ function s:Cy_find_tip() "{{{
     echohl Keyword | echon g:cy_find_str_first | echohl None
     sleep 2
 endfunction "}}}
+function s:Cy_undomap(char) "{{{
+    let move_left = strchars(a:char) - 1
+    execute 'imap <A-u>  <ESC>'.move_left.'dhxa'
+endfunction "}}}
 
 function s:Cy_char(key) "{{{
     let char = ''
@@ -694,7 +722,7 @@ function s:Cy_char(key) "{{{
         let to_char = ''
         let key = nr2char(keycode)
         let keypat = '\V'.escape(key, '\')
-        if (keycode == "\<BS>") || (keycode == char2nr(s:cy_delete_key)) "backspace
+        if (keycode == "\<BS>") || (keycode == char2nr(s:cy_delete_key)) || (keycode == s:cy_delete_key2) "backspace
             if g:cy_to_english == 1
                 return key
             endif
@@ -780,6 +808,7 @@ function s:Cy_char(key) "{{{
                     return "\<Esc>"
                 endif
                 call setreg(g:cy_reg_name, word )
+                call <SID>Cy_undomap(swap_char . word)
                 return swap_char . word
             endif
             let old_char = char
@@ -803,7 +832,16 @@ function s:Cy_char(key) "{{{
             if len(s:cy_pgbuf[s:cy_pagenr]) ==0
                 let showchar = ''
                 let char = ''
+                if s:cy_{b:cy_parameters["active_mb"]}_zhpunc && has_key(s:cy_{b:cy_parameters["active_mb"]}_puncdic, key)
+                    let key = <SID>Cy_puncp(key)
+                    call <SID>Cy_undomap(buffer_char. key)
+                    return buffer_char. key .<SID>Cy_ReturnChar()
+                elseif s:cy_{b:cy_parameters["active_mb"]}_zhpunc == 0
+                    call <SID>Cy_undomap(buffer_char. key)
+                    return buffer_char. key .<SID>Cy_ReturnChar()
+                endif
                 if len(g:cy_buffer)>0
+                    call <SID>Cy_undomap(g:cy_buffer)
                     return g:cy_buffer.<SID>Cy_ReturnChar()
                 else
                     return "".<SID>Cy_ReturnChar()
@@ -869,8 +907,10 @@ function s:Cy_char(key) "{{{
                         return "\<Esc>"
                     endif
                     call setreg(g:cy_reg_name, word)
+                    call <SID>Cy_undomap(buffer_char.word)
                     return buffer_char.word
                 endif
+                call <SID>Cy_undomap(buffer_char)
                 return buffer_char.<SID>Cy_ReturnChar()
             "else
                 "return buffer_char
@@ -879,6 +919,7 @@ function s:Cy_char(key) "{{{
                 "return buffer_char.<SID>Cy_ReturnChar(showchar)."\<C-^>"
                 "return <SID>Cy_ReturnChar(showchar)
             endif
+
         elseif '['.s:cy_{b:cy_parameters["active_mb"]}_inputzh_secondkeys.']' =~ keypat " input Second Chinese
             if len(old_char) == maxcodes
                 let buffer_char = temp_char
@@ -898,8 +939,82 @@ function s:Cy_char(key) "{{{
                     call s:Cy_find_tip()
                     return "\<Esc>"
                 endif
+                call <SID>Cy_undomap(buffer_char.<SID>Cy_ReturnChar(secondcharidx))
                 return buffer_char.<SID>Cy_ReturnChar(secondcharidx)
             endif
+            call <SID>Cy_undomap(buffer_char)
+            return buffer_char.<SID>Cy_ReturnChar()
+        elseif '['.s:cy_third_cn.']' =~ keypat " input third Chinese
+            if len(old_char) == maxcodes
+                let buffer_char = temp_char
+            else
+                let buffer_char = temp_char2
+            endif
+            let temp_char = ''
+            let temp_char2 = ''
+            if s:cy_pgbuf[s:cy_pagenr] != []
+                let thirdcharidx = 1
+                if len(s:cy_pgbuf[s:cy_pagenr][0]) >= 3
+                    let thirdcharidx = 2
+                endif
+                if g:cy_find_mode == 1
+                    let g:cy_find_str = <SID>Cy_ReturnChar(thirdcharidx)
+                    let g:cy_find_mode = 0
+                    call s:Cy_find_tip()
+                    return "\<Esc>"
+                endif
+                call <SID>Cy_undomap(buffer_char.<SID>Cy_ReturnChar(thirdcharidx))
+                return buffer_char.<SID>Cy_ReturnChar(thirdcharidx)
+            endif
+            call <SID>Cy_undomap(buffer_char)
+            return buffer_char.<SID>Cy_ReturnChar()
+        elseif '['.s:cy_four_cn.']' =~ keypat " input four Chinese
+            if len(old_char) == maxcodes
+                let buffer_char = temp_char
+            else
+                let buffer_char = temp_char2
+            endif
+            let temp_char = ''
+            let temp_char2 = ''
+            if s:cy_pgbuf[s:cy_pagenr] != []
+                let fourcharidx = 1
+                if len(s:cy_pgbuf[s:cy_pagenr][0]) >= 4
+                    let fourcharidx = 3
+                endif
+                if g:cy_find_mode == 1
+                    let g:cy_find_str = <SID>Cy_ReturnChar(fourcharidx)
+                    let g:cy_find_mode = 0
+                    call s:Cy_find_tip()
+                    return "\<Esc>"
+                endif
+                call <SID>Cy_undomap(buffer_char.<SID>Cy_ReturnChar(fourcharidx))
+                return buffer_char.<SID>Cy_ReturnChar(fourcharidx)
+            endif
+            call <SID>Cy_undomap(buffer_char)
+            return buffer_char.<SID>Cy_ReturnChar()
+        elseif '['.s:cy_five_cn.']' =~ keypat " input five Chinese
+            if len(old_char) == maxcodes
+                let buffer_char = temp_char
+            else
+                let buffer_char = temp_char2
+            endif
+            let temp_char = ''
+            let temp_char2 = ''
+            if s:cy_pgbuf[s:cy_pagenr] != []
+                let fivecharidx = 4
+                "if len(s:cy_pgbuf[s:cy_pagenr][0]) > 4
+                    "let fivecharidx = 4
+                "endif
+                if g:cy_find_mode == 1
+                    let g:cy_find_str = <SID>Cy_ReturnChar(fivecharidx)
+                    let g:cy_find_mode = 0
+                    call s:Cy_find_tip()
+                    return "\<Esc>"
+                endif
+                call <SID>Cy_undomap(buffer_char.<SID>Cy_ReturnChar(fivecharidx))
+                return buffer_char.<SID>Cy_ReturnChar(fivecharidx)
+            endif
+            call <SID>Cy_undomap(buffer_char)
             return buffer_char.<SID>Cy_ReturnChar()
         "elseif key =~ '[0-' . s:cy_{b:cy_parameters["active_mb"]}_listmax . ']' " number selection
         elseif key =~ '[0-9]' " number selection
@@ -919,6 +1034,7 @@ function s:Cy_char(key) "{{{
                     return "\<Esc>"
                 endif
                 call setreg(g:cy_reg_name, word)
+                call <SID>Cy_undomap(buffer_char.word)
                 return buffer_char.word
             else
                 call <SID>Cy_echofinalresult([showchar, '[' . (s:cy_pagenr + 1) . ']', candidates, buffer_char])
@@ -931,6 +1047,7 @@ function s:Cy_char(key) "{{{
             endif
             let temp_char = ''
             let temp_char2 = ''
+            call <SID>Cy_undomap(buffer_char)
             return buffer_char.<SID>Cy_ReturnChar(showchar)
         elseif keycode == char2nr("\<C-^>") "config tools
             if len(old_char) == maxcodes
@@ -949,6 +1066,7 @@ function s:Cy_char(key) "{{{
             endif
             let temp_char = ''
             let temp_char2 = ''
+            call <SID>Cy_undomap(buffer_char)
             return buffer_char.<SID>Cy_ReturnChar()
         elseif keycode == char2nr(s:cy_switch_key)  "switch status
             if len(old_char) == maxcodes
@@ -963,10 +1081,12 @@ function s:Cy_char(key) "{{{
         elseif keycode == char2nr(s:cy_find_input_key)  "find
             let g:cy_find_mode = 1
             return <SID>Cy_ReturnChar()
-        elseif keycode == char2nr(s:cy_cancle_key)  "
-            "return ""
+        elseif keycode == char2nr(s:cy_cancle_key)  " cancle input
             return <SID>Cy_ReturnChar()
         elseif s:cy_pgbuf[s:cy_pagenr] != [] "return first word and key
+            if key=="\<Esc>"
+                return key
+            endif
             if s:cy_{b:cy_parameters["active_mb"]}_zhpunc && has_key(s:cy_{b:cy_parameters["active_mb"]}_puncdic, key)
                 let key = <SID>Cy_puncp(key)
             endif
@@ -977,6 +1097,7 @@ function s:Cy_char(key) "{{{
             endif
             let temp_char = ''
             let temp_char2 = ''
+            call <SID>Cy_undomap(buffer_char.<SID>Cy_ReturnChar(0) . key)
             return buffer_char.<SID>Cy_ReturnChar(0) . key 
         endif
         let keycode = getchar()
@@ -984,7 +1105,11 @@ function s:Cy_char(key) "{{{
 endfunction "}}}
 
 function s:Cy_tocn() "{{{
-    let g:cy_to_english = 0
+    if g:cy_to_english == 1
+        let g:cy_to_english = 0
+    else
+        let g:cy_to_english = 1
+    endif
     return ""
 endfunction "}}}
 
