@@ -1,18 +1,13 @@
 " CY Input Method for Chinese
 " 穿越中文输入法 (Vim 版本)
 " Author: Cyrus Baow <cy2081@baow.com>
-" Last Change:	2012 Dec 22
-" Release Version: 2.0
+" Last Change:	2013 Mar 12
+" Release Version: 2.2
 " License: GPL
 "
-" 主页：http://www.baow.com/help/cyim/
+" 主页：http://2081.baow.com/
 "
 " {{{
-"
-" 特别说明和致谢：
-"  - ywvim          http://www.vim.org/scripts/script.php?script_id=2662
-"  - PreciseJump    http://www.vim.org/scripts/script.php?script_id=3437
-" 向以上软件作者表示感谢。
 "
 "
 " 使用方法
@@ -685,7 +680,7 @@ function s:Cy_echofinalresult(list) "{{{
         else
             echon ':' | echon c.word
         endif
-        echohl Comment | echon c.suf | echohl None
+        echohl Keyword | echon c.suf | echohl None
         echon c.help
     endfor
 endfunction "}}}
@@ -705,7 +700,7 @@ function s:Cy_find_tip() "{{{
 endfunction "}}}
 function s:Cy_undomap(char) "{{{
     let move_left = strchars(a:char) - 1
-    execute 'imap <A-u>  <ESC>'.move_left.'dhxa'
+    execute 'imap <A-u>  <ESC>'.move_left.'dhxi'
 endfunction "}}}
 
 function s:Cy_char(key) "{{{
@@ -851,7 +846,7 @@ function s:Cy_char(key) "{{{
         elseif (key != '') && (s:cy_{b:cy_parameters["active_mb"]}_pagednkeys =~ keypat)  "page down
             let s:cy_pagenr += 1
             if !has_key(s:cy_pgbuf, s:cy_pagenr)
-                let page = <SID>Cy_comp(char,s:cy_zhcode_startidx,s:cy_continue_idx)
+                let page = <SID>Cy_comp(old_char,s:cy_zhcode_startidx,s:cy_continue_idx)
                 if page != []
                     if s:cy_lastpagenr <= s:cy_pagenr
                         let s:cy_lastpagenr = s:cy_pagenr
